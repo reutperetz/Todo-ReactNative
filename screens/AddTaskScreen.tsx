@@ -1,10 +1,21 @@
 // AddTaskScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import type { RouteProp } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LogBox } from 'react-native';
+import type { RootStackParamList, Task } from '../types';
 LogBox.ignoreLogs(['Non-serializable values were found in the navigation state',]);
-const AddTaskScreen = ({ navigation, route }) => {
+type AddTaskScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AddTask'>;
+type AddTaskScreenRouteProp = RouteProp<RootStackParamList, 'AddTask'>;
+
+type Props = {
+    navigation: AddTaskScreenNavigationProp;
+    route: AddTaskScreenRouteProp;
+};
+
+const AddTaskScreen = ({ navigation, route }: Props) => {
     const [taskName, setTaskName] = useState('');
     const [taskDescription, setTaskDescription] = useState('');
     const [taskCategory, setTaskCategory] = useState('');
@@ -16,7 +27,7 @@ const AddTaskScreen = ({ navigation, route }) => {
             return;
         }
 
-        const newTask = {
+        const newTask: Task = {
             id: Math.random().toString(),
             name: taskName.trim(),
             description: taskDescription.trim(),
@@ -24,7 +35,7 @@ const AddTaskScreen = ({ navigation, route }) => {
         };
 
         // Retrieve the existing tasks from AsyncStorage
-        const existingTasks = route.params.tasks || [];
+        const existingTasks = route.params?.tasks ?? [];
 
         // Update the tasks with the new task
         const updatedTasks = [...existingTasks, newTask];

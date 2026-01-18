@@ -4,8 +4,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import TaskListScreen from './screens/TaskListScreen';
 import AddTaskScreen from './screens/AddTaskScreen';
+import type { RootStackParamList } from './types';
 
-const Stack = createStackNavigator();
+const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
     return (

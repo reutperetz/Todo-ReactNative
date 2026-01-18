@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
     FlatList,
+    ListRenderItem,
     StyleSheet,
     TouchableOpacity,
     TextInput,
@@ -11,13 +12,27 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { RouteProp } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList, Task } from '../types';
 
 const TASKS_STORAGE_KEY = 'tasks';
 
-const TaskListScreen = ({ navigation, route }) => {
-    const [tasks, setTasks] = useState([]);
-    const [editingTask, setEditingTask] = useState(null);
-    const [editedTask, setEditedTask] = useState(null);
+type TaskListScreenNavigationProp = StackNavigationProp<
+    RootStackParamList,
+    'TaskList'
+>;
+type TaskListScreenRouteProp = RouteProp<RootStackParamList, 'TaskList'>;
+
+type Props = {
+    navigation: TaskListScreenNavigationProp;
+    route: TaskListScreenRouteProp;
+};
+
+const TaskListScreen = ({ navigation }: Props) => {
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [editingTask, setEditingTask] = useState<string | null>(null);
+    const [editedTask, setEditedTask] = useState<Task | null>(null);
 
     useEffect(() => {
         loadTasks();
@@ -28,13 +43,14 @@ const TaskListScreen = ({ navigation, route }) => {
         navigation.setOptions({
             title: `To-do `,
         });
-    }, [tasks]);
+    }, [navigation, tasks]);
 
     const loadTasks = async () => {
         try {
             const storedTasks = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
             if (storedTasks !== null) {
-                setTasks(JSON.parse(storedTasks));
+                const parsedTasks = JSON.parse(storedTasks) as Task[];
+                setTasks(parsedTasks);
             }
         } catch (error) {
             console.error('Error loading tasks from AsyncStorage:', error);
@@ -49,20 +65,27 @@ const TaskListScreen = ({ navigation, route }) => {
         }
     };
 
-    const handleDeleteTask = (taskId) => {
+    const handleDeleteTask = (taskId: string) => {
         const updatedTasks = tasks.filter((task) => task.id !== taskId);
         setTasks(updatedTasks);
     };
 
-    const handleEditTask = (taskId) => {
+    const handleEditTask = (taskId: string) => {
         setEditingTask(taskId);
         const taskToEdit = tasks.find((task) => task.id === taskId);
+        if (!taskToEdit) {
+            return;
+        }
         setEditedTask({ ...taskToEdit });
     };
 
     const handleSaveTask = () => {
         if (!editedTask || !editedTask.name) {
             Alert.alert('Validation Error', 'Task name is required.');
+            return;
+        }
+
+        if (!editingTask) {
             return;
         }
 
@@ -73,14 +96,9 @@ const TaskListScreen = ({ navigation, route }) => {
         setEditingTask(null);
         setEditedTask(null);
         saveTasks();
-        navigation.setOptions({
-            params: {
-                tasks: updatedTasks,
-            },
-        });
     };
 
-    const renderItem = ({ item }) => (
+    const renderItem: ListRenderItem<Task> = ({ item }) => (
         <View style={styles.taskItem}>
             <View style={styles.taskInfo}>
                 <Text style={styles.taskName}>
@@ -97,13 +115,13 @@ const TaskListScreen = ({ navigation, route }) => {
             <View style={styles.buttonsContainer}>
                 <TouchableOpacity onPress={() => handleDeleteTask(item.id)}>
                     <View style={styles.deleteButton}>
-                        <Ionicons name="ios-trash" size={24} color="white" />
+                        <Ionicons name="trash" size={24} color="white" />
                     </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => handleEditTask(item.id)}>
                     <View style={styles.editButton}>
-                        <Ionicons name="ios-create" size={24} color="white" />
+                        <Ionicons name="create" size={24} color="white" />
                     </View>
                 </TouchableOpacity>
             </View>
@@ -123,7 +141,7 @@ const TaskListScreen = ({ navigation, route }) => {
                 style={styles.addButton}
                 onPress={() => navigation.navigate('AddTask', { tasks, setTasks })}
             >
-                <Ionicons name="ios-add" size={36} color="white" />
+                <Ionicons name="add" size={36} color="white" />
             </TouchableOpacity>
             <Modal
                 visible={editingTask !== null}
@@ -147,29 +165,35 @@ const TaskListScreen = ({ navigation, route }) => {
                         <TextInput
                             style={styles.editTaskInput}
                             placeholder="Task Name *"
-                            value={editedTask?.name}
+                            value={editedTask?.name ?? ''}
                             onChangeText={(text) =>
-                                setEditedTask((prevTask) => ({ ...prevTask, name: text }))
+                                setEditedTask((prevTask) =>
+                                    prevTask ? { ...prevTask, name: text } : prevTask
+                                )
                             }
                         />
                         <TextInput
                             style={styles.editTaskInput}
                             placeholder="Task Description"
-                            value={editedTask?.description}
+                            value={editedTask?.description ?? ''}
                             onChangeText={(text) =>
-                                setEditedTask((prevTask) => ({ ...prevTask, description: text }))
+                                setEditedTask((prevTask) =>
+                                    prevTask ? { ...prevTask, description: text } : prevTask
+                                )
                             }
                         />
                         <TextInput
                             style={styles.editTaskInput}
                             placeholder="Task Category"
-                            value={editedTask?.category}
+                            value={editedTask?.category ?? ''}
                             onChangeText={(text) =>
-                                setEditedTask((prevTask) => ({ ...prevTask, category: text }))
+                                setEditedTask((prevTask) =>
+                                    prevTask ? { ...prevTask, category: text } : prevTask
+                                )
                             }
                         />
                         <TouchableOpacity style={styles.saveButton} onPress={handleSaveTask}>
-                            <Ionicons name="ios-checkmark-circle" size={36} color="blue" />
+                            <Ionicons name="checkmark-circle" size={36} color="blue" />
                         </TouchableOpacity>
                     </View>
                 </TouchableOpacity>
